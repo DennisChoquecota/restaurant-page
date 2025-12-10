@@ -17,6 +17,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import Hero from "../components/sections/Hero";
+import Footer from "../components/sections/Footer";
+import Discover from "../components/sections/content/Discover";
 
 export default function Home() {
   const { darkMode } = useTheme();
@@ -105,6 +107,8 @@ export default function Home() {
     <div style={{ minHeight: "100vh", paddingBottom: "4rem" }}>
       {/* Hero Section */}
     <Hero />
+    <Discover />
+    <Footer />
     </div>
   );
 }

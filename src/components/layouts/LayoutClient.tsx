@@ -38,21 +38,6 @@ export default function LayoutClient({ children }: LayoutClientProps) {
     localStorage.setItem("drawerExpanded", value.toString());
   };
 
-  // Calculate left margin based on drawer mode (desktop only)
-  const getContentMargin = () => {
-    if (!isDesktop) return 0;
-
-    switch (drawerMode) {
-      case "always-visible":
-        return DRAWER_WIDTH_EXPANDED;
-      case "mini-hover":
-        return isDrawerExpanded ? DRAWER_WIDTH_EXPANDED : DRAWER_WIDTH_MINI;
-      case "toggle":
-      default:
-        return 0;
-    }
-  };
-
   return (
     <>
       <Navbar
@@ -71,9 +56,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
       />
 
       <motion.div
-        animate={{
-          marginLeft: getContentMargin(),
-        }}
+        animate={{ marginLeft: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         style={{
           minHeight: "100vh",
