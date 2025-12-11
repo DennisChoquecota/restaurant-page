@@ -40,12 +40,12 @@ export const Navbar = ({
         backgroundColor: themeColors.background,
         color: themeColors.text,
         borderBottom: `1px solid ${themeColors.border}`,
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
+        // position: "fixed",
+        // top: 0,
+        // left: 0,
+        // right: 0,
         zIndex: 50,
-        transition: "background-color 0.3s, color 0.3s",
+        transition: "background-transparent 0.3s, color 0.3s",
         boxShadow: darkMode
           ? "0 1px 3px rgba(0,0,0,0.3)"
           : "0 1px 3px rgba(0,0,0,0.1)",
