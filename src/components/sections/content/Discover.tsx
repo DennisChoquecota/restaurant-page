@@ -6,11 +6,8 @@ export default function Discover() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const y = window.scrollY;
-      const parallax = y * (1 - Math.exp(-y / 200));
-      setOffsetY(parallax);
+      setOffsetY(window.scrollY * 0.06);
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -18,11 +15,12 @@ export default function Discover() {
   return (
     <section className="bg-[#e1c5ad] w-full h-[110vh] flex mb-10 relative overflow-hidden">
       <div
-        className="absolute -top-10 left-0 w-full h-[120%] bg-cover bg-center"
+        className="absolute -top-9 left-0 w-full h-[1000px] bg-cover bg-center"
         style={{
           backgroundImage: "url('./discoverimg.jpg')",
+          backgroundAttachment: "fixed",
           transform: `translateY(${offsetY}px)`,
-          transition: "transform 0.05s linear",
+          transition: "transform 0.1s linear",
         }}
       />
 
