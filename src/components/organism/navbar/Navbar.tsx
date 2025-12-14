@@ -1,11 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, Sun, Moon } from "lucide-react";
 import { useTheme } from "@/src/context/ThemeContext";
 import { useDrawerMode } from "@/src/context/DrawerModeContext";
 import { colors } from "@/src/db/dbColors";
-import { Menu, X, Sun, Moon } from "lucide-react";
+
+// Definición de tipos para la estructura de color (necesaria para TypeScript)
+type ThemeColors = typeof colors.light;
+
+// Definición de enlaces
+const links = [
+  { name: "Inicio", href: "#inicio" },
+  { name: "Servicios", href: "#servicios" },
+  { name: "Portafolio", href: "#portafolio" },
+  { name: "Contacto", href: "#contacto" },
+];
 
 interface NavbarProps {
   drawerOpen: boolean;
@@ -14,6 +25,10 @@ interface NavbarProps {
   isDrawerExpanded: boolean;
   setDrawerExpanded: (value: boolean) => void;
 }
+
+// ----------------------------------------------------
+// Componente Navbar
+// ----------------------------------------------------
 
 export const Navbar = ({
   drawerOpen,
@@ -24,49 +39,89 @@ export const Navbar = ({
 }: NavbarProps) => {
   const { darkMode, toggleDarkMode } = useTheme();
   const { drawerMode } = useDrawerMode();
-  const themeColors = darkMode ? colors.dark : colors.light;
 
-  // ⛔ evita el parpadeo al esperar la hidratación
+  const themeColors: ThemeColors = useMemo(() => 
+    darkMode ? colors.dark : colors.light, [darkMode]);
+  
+  const accentColor = themeColors.textAccent; 
+
+  // ESTADO DE OPACIDAD BASE (0 a 1)
+  const [opacity, setOpacity] = useState(0); 
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+
+  const SCROLL_THRESHOLD = 300; 
+  // 💥 NUEVA BASE DE OPACIDAD: Comenzará en 0.3 y aumentará hasta 1.0
+  const MIN_OPACITY = 0.3;
+
+  // EFECTO DE SCROLL
+  useEffect(() => {
+    setMounted(true);
+    
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      
+      // Calcula un factor de scroll (0 a 1)
+      const scrollFactor = Math.min(1, scrollY / SCROLL_THRESHOLD);
+      
+      // Calcula la nueva opacidad: empieza en MIN_OPACITY y aumenta hasta 1.0
+      // Formula: Opacidad Base + (Factor de Scroll * Opacidad Adicional Máxima)
+      const newOpacity = MIN_OPACITY + scrollFactor * (1 - MIN_OPACITY);
+
+      if (newOpacity !== opacity) {
+        setOpacity(newOpacity);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [opacity]);
+
+
+  // CLASES BASE DEL NAVBAR (fijas y dinámicas)
+  // Se considera "sólido" cuando la opacidad alcanza o supera el 90%
+  const isSolid = opacity > 0.9; 
+  const textColor = isSolid 
+    ? themeColors.text 
+    : (darkMode ? 'white' : themeColors.textAccent); 
+
+  // Función para obtener los componentes RGB del color HEX (necesario para RGBA)
+  const getRGB = (hex: string): { r: number, g: number, b: number } => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return { r, g, b };
+  };
+
+  const { r, g, b } = getRGB(themeColors.background);
 
   return (
     <nav
+      className={`
+        fixed top-0 left-0 right-0 z-50 
+        flex justify-between items-center 
+        px-6 py-3 border-b transition-all duration-500 ease-in-out
+        ${isSolid ? 'shadow-md' : 'shadow-none'}
+      `}
       style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "0.75rem 1.5rem",
-        backgroundColor: themeColors.background,
-        color: themeColors.text,
-        borderBottom: `1px solid ${themeColors.border}`,
-        // position: "fixed",
-        // top: 0,
-        // left: 0,
-        // right: 0,
-        zIndex: 50,
-        transition: "background-transparent 0.3s, color 0.3s",
-        boxShadow: darkMode
-          ? "0 1px 3px rgba(0,0,0,0.3)"
-          : "0 1px 3px rgba(0,0,0,0.1)",
+        // 1. Fondo dinámico con opacidad base de 0.3
+        backgroundColor: `rgba(${r}, ${g}, ${b}, ${opacity})`, 
+        // 2. Transición y color de texto dinámico
+        color: textColor,
+        // El borde aparece solo cuando está "sólido"
+        borderColor: isSolid ? themeColors.border : 'transparent',
       }}
     >
-      {/* Left Section */}
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+      {/* 1. Left Section (Logo and Mobile Menu) */}
+      <div className="flex items-center gap-4">
         
-        {/* 🔥 Ahora solo se renderiza si mounted && isMobile (NO parpadeo) */}
+        {/* Mobile Menu Button - Solo visible en móvil */}
         {mounted && isMobile && (
           <AnimatePresence mode="wait" initial={false}>
             <motion.button
-              key={
-                drawerMode === "toggle"
-                  ? isDrawerExpanded
-                    ? "expanded"
-                    : "collapsed"
-                  : drawerOpen
-                  ? "open"
-                  : "closed"
-              }
+              key={drawerMode === "toggle" ? (isDrawerExpanded ? "expanded" : "collapsed") : (drawerOpen ? "open" : "closed")}
               initial={{ rotate: 90, opacity: 0 }}
               animate={{ rotate: 0, opacity: 1 }}
               exit={{ rotate: -90, opacity: 0 }}
@@ -78,16 +133,10 @@ export const Navbar = ({
                   setDrawerOpen();
                 }
               }}
+              className="p-2 rounded-lg border-none cursor-pointer flex items-center justify-center"
               style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: themeColors.text,
-                padding: "0.5rem",
-                borderRadius: "0.5rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                backgroundColor: 'transparent',
+                color: 'inherit', // Hereda el color dinámico
               }}
               whileHover={{ backgroundColor: themeColors.secondary }}
             >
@@ -102,69 +151,60 @@ export const Navbar = ({
           </AnimatePresence>
         )}
 
-        {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              borderRadius: "0.5rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: "bold",
-              color: "white",
-              fontSize: "1.25rem",
-            }}
-          >
-            P
-          </div>
-
-          {!isMobile && (
-            <div>
-              <h1
-                style={{
-                  fontSize: "1.25rem",
-                  fontWeight: "700",
-                  margin: 0,
-                  lineHeight: 1,
-                }}
-              >
-                Aqui el logo
-              </h1>
-              <p
-                style={{
-                  fontSize: "0.75rem",
-                  margin: 0,
-                  opacity: 0.6,
-                  lineHeight: 1,
-                }}
-              >
-                Dashboard
-              </p>
-            </div>
-          )}
+        {/* Logo (40x40 Púrpura) */}
+        <div 
+          className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xl text-white"
+          style={{
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          }}
+        >
+          P
         </div>
       </div>
 
-      {/* Right Section */}
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      {/* 2. Middle Section (Navigation Links) - Solo en Desktop */}
+      {!isMobile && (
+        <div className="flex gap-5"> 
+          {links.map((link) => (
+            <motion.a
+              key={link.name}
+              href={link.href}
+              className="text-base font-medium relative pt-1 pb-1 transition-colors duration-200"
+              style={{
+                color: 'inherit', // Hereda el color dinámico del Navbar
+                textDecoration: "none",
+              }}
+              whileHover={{ color: accentColor }}
+              initial={{ opacity: 0.9 }}
+              transition={{ duration: 0.2 }}
+            >
+              {link.name}
+              
+              {/* Indicador Underline/Subrayado al pasar el mouse */}
+              <motion.span
+                className="absolute bottom-0 left-0 h-0.5 w-full"
+                style={{
+                  backgroundColor: accentColor,
+                }}
+                initial={{ scaleX: 0 }}
+                whileHover={{ scaleX: 1 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              />
+            </motion.a>
+          ))}
+        </div>
+      )}
+
+      {/* 3. Right Section (Dark Mode Toggle) */}
+      <div className="flex items-center gap-2">
         <motion.button
           onClick={toggleDarkMode}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          className="p-2 rounded-lg border-none cursor-pointer flex items-center justify-center transition-colors duration-200"
           style={{
-            padding: "0.5rem",
-            borderRadius: "0.5rem",
-            border: "none",
             backgroundColor: "transparent",
-            color: themeColors.text,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "background-color 0.2s",
+            color: 'inherit', // Hereda el color dinámico del Navbar
           }}
           onMouseEnter={(e) =>
             (e.currentTarget.style.backgroundColor = themeColors.secondary)
